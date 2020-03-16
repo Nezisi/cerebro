@@ -1,21 +1,12 @@
 name := "cerebro"
-
 maintainer := "Leonardo Menezes <leonardo.menezes@xing.com>"
-
 packageSummary := "Elasticsearch web admin tool"
-
 packageDescription := """cerebro is an open source(MIT License) elasticsearch web admin tool built
   using Scala, Play Framework, AngularJS and Bootstrap."""
-
-version := "0.8.5"
-
-scalaVersion := "2.12.10"
-
 rpmVendor := "lmenezes"
-
 rpmLicense := Some("MIT")
-
 rpmUrl := Some("http://github.com/lmenezes/cerebro")
+scalaVersion := "2.12.10"
 
 libraryDependencies ++= Seq(
   "com.typesafe.play" %% "play"                    % "2.8.1",
@@ -33,7 +24,7 @@ libraryDependencies += ws
 libraryDependencies += guice
 
 lazy val root = (project in file(".")).
-  enablePlugins(PlayScala, BuildInfoPlugin, LauncherJarPlugin, JDebPackaging, RpmPlugin).
+  enablePlugins(GitVersioning, PlayScala, BuildInfoPlugin, LauncherJarPlugin, JDebPackaging, RpmPlugin).
   settings(
     buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
     buildInfoPackage := "models"
