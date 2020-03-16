@@ -2,7 +2,7 @@ module.exports = function(grunt) {
   grunt.initConfig({
     clean: {
       dist: {
-        src: [ 'public/css', 'public/js', 'src/temp', 'public/fonts' ]
+        src: [ 'public/css', 'public/js', 'src/assets/temp', 'public/fonts' ]
       }
     },
     watch: {
@@ -23,23 +23,23 @@ module.exports = function(grunt) {
     less: {
         bootstrap: {
             files: {
-                'src/assets/temp/bootstrap.css': 'src/assets/less/bootstrap-build.less'
+                'src/assets/temp/css/bootstrap.css': 'src/assets/less/bootstrap-build.less'
             }
         },
     },
     concat: {
       vendorjs: {
         src: [
-          'node_modules/jquery/dist/jquery.min.js',
-          'node_modules/angular/angular.min.js',
-          'node_modules/angular-animate/angular-animate.min.js',
-          'node_modules/angular-route/angular-route.min.js',
-          'node_modules/bootstrap/dist/js/bootstrap.min.js',
+          'node_modules/jquery/dist/jquery.js',
+          'node_modules/angular/angular.js',
+          'node_modules/angular-animate/angular-animate.js',
+          'node_modules/angular-route/angular-route.js',
+          'node_modules/bootstrap/dist/js/bootstrap.js',
           'src/assets/libs/jsontree/jsontree.min.js',
           'node_modules/angular-ui-bootstrap/dist/ui-bootstrap.js',
           'node_modules/ace-builds/src-min/ace.js',
         ],
-        dest: 'public/js/lib.js'
+        dest: 'src/assets/temp/js/lib.js'
       },
       appjs: {
         src: [
@@ -54,12 +54,20 @@ module.exports = function(grunt) {
     cssmin: {
         bootstrap: {
             expand: false,
-            files: {'public/css/lib.css': ['src/assets/temp/bootstrap.css', 'node_modules/font-awesome/css/font-awesome.css']}
+            files: {'public/css/lib.css': ['src/assets/temp/css/bootstrap.css', 'node_modules/font-awesome/css/font-awesome.css']}
         },
         app: {
             expand: false,
             files: {'public/css/app.css': ['src/app/css/app.css']}
         }
+    },
+    terser: {
+      vendor_js:{
+        sourceMap: false,
+        files: {
+          'public/js/lib.js':'src/assets/temp/js/lib.js',
+        }
+      }
     },
     jshint: {
       cerebro: {
@@ -85,14 +93,15 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-connect');
   grunt.loadNpmTasks('grunt-contrib-copy');
   grunt.loadNpmTasks('grunt-contrib-cssmin');
-  grunt.loadNpmTasks('grunt-eslint');
   grunt.loadNpmTasks('grunt-contrib-jshint');
-  grunt.loadNpmTasks('grunt-karma');
   grunt.loadNpmTasks('grunt-contrib-less');
   grunt.loadNpmTasks('grunt-contrib-qunit');
   grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-eslint');
+  grunt.loadNpmTasks('grunt-karma');
+  grunt.loadNpmTasks('grunt-terser');
 
   grunt.registerTask('dev', ['watch'])
-  grunt.registerTask('build', ['clean', 'jshint', 'eslint', 'less', 'concat', 'copy', 'cssmin', 'qunit']);
+  grunt.registerTask('build', ['clean', 'jshint', 'eslint', 'less', 'concat', 'copy', 'cssmin', 'terser', 'qunit']);
   grunt.registerTask('test', ['build', 'karma'])
 };
