@@ -144,7 +144,11 @@
           <div class="subtitle" ng-show="index.aliases.length">
             <div class="title">
               <i class="fa fa-tag"></i> {{index.aliases[0]}}
-              <span ng-show="index.aliases.length > 1">(+{{index.aliases.length - 1}})</span>
+              <span ng-show="index.aliases.length > 1">
+                <span data-toggle="tooltip" data-placement="bottom" title="{{ (index.aliases|orderBy).join('\n') }}">
+                  (+{{index.aliases.length }})
+                </span>
+              </span>
             </div>
           </div>
           <div class="detail">
