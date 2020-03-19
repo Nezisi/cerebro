@@ -89,6 +89,9 @@
     <td>
       <div>
         <span class="main-stat">{{node.cpu.load | number:2}}</span>
+        <span class="detail-stat">
+          <div>avbl. proc.: {{node.cpu.available_processors}}</div>
+        </span>
       </div>
     </td>
     <td>

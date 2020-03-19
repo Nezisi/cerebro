@@ -8,11 +8,13 @@ object Node {
   def apply(id: String, info: JsValue, stats: JsValue, masterNodeId: String) = {
     val nodeRoles = NodeRoles(stats)
 
-
     // AWS nodes return no host/ip info
     val host = (stats \ "host").asOpt[JsString].getOrElse(JsNull)
     val ip = (stats \ "ip").asOpt[JsString].getOrElse(JsNull)
     val jvmVersion = (info \ "jvm" \ "version").asOpt[JsString].getOrElse(JsNull)
+
+    val esVersion = (info \ "version").as[String]
+    val availableProcessors = (info \ "os" \ "available_processors").as[Int]
 
     Json.obj(
       "id" -> JsString(id),
@@ -20,11 +22,11 @@ object Node {
       "name" -> (stats \ "name").as[JsString],
       "host" -> host,
       "ip" -> ip,
-      "es_version" -> (info \ "version").as[JsString],
+      "es_version" -> esVersion,
       "jvm_version" -> jvmVersion,
-      "load_average" -> loadAverage(stats),
-      "available_processors" -> (info \ "os" \ "available_processors").as[JsNumber],
-      "cpu_percent" -> cpuPercent(stats),
+      "load_average" -> loadAverage(stats, availableProcessors, esVersion),
+      "available_processors" -> availableProcessors,
+      "cpu_percent" -> cpuPercent(stats, esVersion),
       "master" -> JsBoolean(nodeRoles.master),
       "data" -> JsBoolean(nodeRoles.data),
       "coordinating" -> JsBoolean(nodeRoles.coordinating),
@@ -50,18 +52,34 @@ object Node {
     )
   }
 
-  def loadAverage(nodeStats: JsValue): JsNumber = {
-    val load = (nodeStats \ "os" \ "cpu" \ "load_average" \ "1m").asOpt[Float].getOrElse(// 5.X
-      (nodeStats \ "os" \ "load_average").asOpt[Float].getOrElse(0f) // FIXME: 2.X
-    )
-    JsNumber(BigDecimal(load.toDouble))
+  def loadAverage(nodeStats: JsValue, availableProcessors: Int, esVersion: String): JsNumber = {
+    val load = parseLoadAverage(nodeStats, availableProcessors, esVersion).getOrElse(0.0)
+    JsNumber(BigDecimal(load))
   }
 
-  def cpuPercent(nodeStats: JsValue): JsNumber = {
-    val cpu = (nodeStats \ "os" \ "cpu" \ "percent").asOpt[Int].getOrElse(// 5.X
-      (nodeStats \ "os" \ "cpu_percent").asOpt[Int].getOrElse(0) // FIXME 2.X
-    )
+  private def parseLoadAverage(stats: JsValue, availableProcessors: Int, esVersion: String): Option[Double] = {
+    if (esVersion.startsWith("1.")) {
+      val cpuLoadAverage = (stats \ "os" \ "load_average").asOpt[JsArray].getOrElse(JsArray.empty)
+      return cpuLoadAverage.head.asOpt[Double]
+    }
+    if (esVersion.startsWith("2.")) {
+      return (stats \ "os" \ "load_average").asOpt[Double]
+    }
+    (stats \ "os" \ "cpu" \ "load_average" \ "1m").asOpt[Double]
+  }
+
+  def cpuPercent(nodeStats: JsValue, esVersion: String): JsNumber = {
+    val cpu = parseCpuPercent(nodeStats, esVersion).getOrElse(0)
     JsNumber(BigDecimal(cpu))
   }
 
+  private def parseCpuPercent(nodeStats: JsValue, esVersion: String): Option[Int] = {
+    if (esVersion.startsWith("1.")) {
+      return (nodeStats \ "os" \ "cpu" \ "user").asOpt[Int]
+    }
+    if (esVersion.startsWith("2.")) {
+      return (nodeStats \ "os" \ "cpu_percent").asOpt[Int]
+    }
+    (nodeStats \ "os" \ "cpu" \ "percent").asOpt[Int]
+  }
 }

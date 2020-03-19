@@ -3,10 +3,14 @@ package models.nodes
 import models.commons.NodeRoles
 import play.api.libs.json._
 
+import scala.math.BigDecimal.RoundingMode
+
 object Node {
 
   def apply(id: String, currentMaster: Boolean, info: JsValue, stats: JsValue): JsValue = {
     val jvmVersion = (info \ "jvm" \ "version").asOpt[JsString].getOrElse(JsNull)
+    val esVersion = (info \ "version").as[String]
+    val availableProcessors = (info \ "os" \ "available_processors").asOpt[Int].getOrElse(1)
 
     Json.obj(
       "id" -> JsString(id),
@@ -15,7 +19,7 @@ object Node {
       "host" -> (stats \ "host").asOpt[JsValue],
       "heap" -> heap(stats),
       "disk" -> disk(stats),
-      "cpu" -> cpu(stats),
+      "cpu" -> cpu(stats, availableProcessors, esVersion),
       "uptime" -> (stats \ "jvm" \ "uptime_in_millis").as[JsValue],
       "jvm" -> jvmVersion,
       "version" -> (info \ "version").as[JsValue]
@@ -32,18 +36,43 @@ object Node {
     )
   }
 
-  private def cpu(stats: JsValue): JsValue = {
-    val load = (stats \ "os" \ "cpu" \ "load_average" \ "1m").asOpt[JsValue].getOrElse(// 5.X
-      (stats \ "os" \ "load_average").asOpt[JsValue].getOrElse(JsNull) // FIXME: 2.X
-    )
-    val osCpu = (stats \ "os" \ "cpu" \ "percent").asOpt[JsValue].getOrElse(// 5.X
-      (stats \ "os" \ "cpu_percent").asOpt[JsValue].getOrElse(JsNull) // FIXME 2.X
-    )
+  private def cpu(stats: JsValue, availableProcessors: Int, esVersion: String): JsValue = {
     Json.obj(
-      "process" -> (stats \ "process" \ "cpu" \ "percent").as[JsValue],
-      "os" -> osCpu,
-      "load" -> load
+      "process" -> parseCpuPercent(stats, availableProcessors, esVersion),
+      "os" -> parseCpuOs(stats, esVersion),
+      "load" -> parseLoadAverage(stats, esVersion),
+      "available_processors"-> availableProcessors
     )
+  }
+
+  private def parseCpuPercent(stats: JsValue, availableProcessors: Int, esVersion: String): Option[JsNumber] = {
+    if (esVersion.startsWith("1.")) {
+      // ToDo: The values seem to be either totally bogus or out of sync?
+      val cpuPercent = (stats \ "process" \ "cpu" \ "percent").asOpt[Double].getOrElse(0.0)
+      val cpuPercent100 = BigDecimal(cpuPercent / availableProcessors).setScale(2, RoundingMode.HALF_UP)
+      return Option[JsNumber](JsNumber(cpuPercent100))
+    }
+    (stats \ "process" \ "cpu" \ "percent").asOpt[JsNumber]
+  }
+
+  private def parseLoadAverage(stats: JsValue, esVersion: String): Option[JsValue] = {
+    if (esVersion.startsWith("1.")) {
+      return (stats \ "os" \ "load_average").asOpt[JsArray].getOrElse(JsArray.empty).head.toOption
+    }
+    if (esVersion.startsWith("2.")) {
+      return (stats \ "os" \ "load_average").asOpt[JsValue]
+    }
+    (stats \ "os" \ "cpu" \ "load_average" \ "1m").asOpt[JsValue]
+  }
+
+  private def parseCpuOs(stats: JsValue, esVersion: String): Option[JsValue] = {
+    if (esVersion.startsWith("1.")) {
+      return (stats \ "os" \ "cpu" \ "user").asOpt[JsValue]
+    }
+    if (esVersion.startsWith("2.")) {
+      return (stats \ "os" \ "cpu_percent").asOpt[JsValue]
+    }
+    (stats \ "os" \ "cpu" \ "percent").asOpt[JsValue]
   }
 
   private def disk(stats: JsValue): JsValue = {
