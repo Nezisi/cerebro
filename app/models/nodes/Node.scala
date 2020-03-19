@@ -41,15 +41,14 @@ object Node {
       "process" -> parseCpuPercent(stats, availableProcessors, esVersion),
       "os" -> parseCpuOs(stats, esVersion),
       "load" -> parseLoadAverage(stats, esVersion),
-      "available_processors"-> availableProcessors
+      "available_processors" -> availableProcessors
     )
   }
 
   private def parseCpuPercent(stats: JsValue, availableProcessors: Int, esVersion: String): Option[JsNumber] = {
     if (esVersion.startsWith("1.")) {
-      // ToDo: The values seem to be either totally bogus or out of sync?
       val cpuPercent = (stats \ "process" \ "cpu" \ "percent").asOpt[Double].getOrElse(0.0)
-      val cpuPercent100 = BigDecimal(cpuPercent / availableProcessors).setScale(2, RoundingMode.HALF_UP)
+      val cpuPercent100 = BigDecimal(cpuPercent / (availableProcessors -1 )) .setScale(2, RoundingMode.HALF_UP)
       return Option[JsNumber](JsNumber(cpuPercent100))
     }
     (stats \ "process" \ "cpu" \ "percent").asOpt[JsNumber]
@@ -67,7 +66,7 @@ object Node {
 
   private def parseCpuOs(stats: JsValue, esVersion: String): Option[JsValue] = {
     if (esVersion.startsWith("1.")) {
-      return (stats \ "os" \ "cpu" \ "user").asOpt[JsValue]
+      return (stats \ "os" \ "cpu" \ "usage").asOpt[JsValue]
     }
     if (esVersion.startsWith("2.")) {
       return (stats \ "os" \ "cpu_percent").asOpt[JsValue]

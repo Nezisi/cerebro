@@ -75,7 +75,7 @@ object Node {
 
   private def parseCpuPercent(nodeStats: JsValue, esVersion: String): Option[Int] = {
     if (esVersion.startsWith("1.")) {
-      return (nodeStats \ "os" \ "cpu" \ "user").asOpt[Int]
+      return (nodeStats \ "os" \ "cpu" \ "usage").asOpt[Int]
     }
     if (esVersion.startsWith("2.")) {
       return (nodeStats \ "os" \ "cpu_percent").asOpt[Int]
