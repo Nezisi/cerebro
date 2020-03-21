@@ -28,7 +28,7 @@ module.exports = function(grunt) {
         },
     },
     concat: {
-      vendorjs: {
+      vendor_js: {
         src: [
           'node_modules/jquery/dist/jquery.js',
           'node_modules/angular/angular.js',
@@ -41,14 +41,14 @@ module.exports = function(grunt) {
         ],
         dest: 'src/assets/temp/js/lib.js'
       },
-      appjs: {
+      app_js: {
         src: [
           'src/app/app.routes.js',
           'src/app/components/*/*.js',
           'src/app/shared/*.js',
           'src/app/shared/*/*.js'
         ],
-        dest: 'public/js/app.js'
+        dest: 'src/assets/temp/js/app.js'
       },
     },
     cssmin: {
@@ -65,7 +65,16 @@ module.exports = function(grunt) {
       vendor_js:{
         sourceMap: false,
         files: {
-          'public/js/lib.js':'src/assets/temp/js/lib.js',
+          'public/js/lib.js':'src/assets/temp/js/lib.js'
+        }
+      },
+      app_js: {
+        options: {
+          mangle: false,
+        },
+        sourceMap: false,
+        files: {
+          'public/js/app.js':'src/assets/temp/js/app.js',
         }
       }
     },

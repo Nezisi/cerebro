@@ -37,7 +37,7 @@
     "grunt-contrib-watch": "^1.1.0",
     "grunt-eslint": "^22.0.0",
     "grunt-karma": "^3.0.2",
-    "grunt-terser": "^1.0.0",
+    "grunt-terser": "git+https://github.com/adascal/grunt-terser.git",
     "jasmine-core": "^3.5.0",
     "jquery": "^2.2.4",
     "karma": "^4.4.1",
